@@ -15,7 +15,7 @@ export const EVENT = {
   intro: `
     It's time for our annual Deacon Christmas Party!
 
-    Join us on Sunday, December 13, at 5:00 PM for an evening of good food, fun games, and Christmas fellowship. We might even do some caroling… just kidding, no caroling!
+    Join us on Sunday, December 13, at 5:00 PM for an evening of good food, fun games, and Christmas caroling… just kidding, no caroling!
   `,
 
   details: [
