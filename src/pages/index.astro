@@ -6,6 +6,8 @@ const introParagraphs = EVENT.intro
   .trim()
   .split(/\n\s*\n/)
   .map((p) => p.split('\n').map((line) => line.trim()).filter(Boolean));
+// Detail text: each line break in the config becomes a line break on the page.
+const toLines = (text: string) => text.split('\n').map((line) => line.trim()).filter(Boolean);
 ---
 <!doctype html>
 <html lang="en">
@@ -37,7 +39,7 @@ const introParagraphs = EVENT.intro
             <div class="info-item">
               <dt>{d.label}</dt>
               <dd>
-                {d.text}
+                {toLines(d.text).map((line, i) => (<>{i > 0 && <br />}{line}</>))}
                 {'link' in d && d.link && (
                   <a class="info-link" href={d.link.url} target="_blank" rel="noopener">{d.link.text} ↗</a>
                 )}
@@ -373,7 +375,7 @@ const introParagraphs = EVENT.intro
       .info-item:first-child { border-top: 0; padding-top: 0; }
       .info-item dt { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--pine); padding-top: 3px; }
       .info-item dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-      .info-link { display: inline-block; margin-top: 6px; font-weight: 600; color: var(--berry); text-underline-offset: 3px; }
+      .info-link { display: block; width: fit-content; margin-top: 6px; font-weight: 600; color: var(--berry); text-underline-offset: 3px; }
       .info-link:hover { text-decoration-thickness: 2px; }
       .info-link:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; border-radius: 2px; }
       @media (max-width: 560px) { .info-item { grid-template-columns: 1fr; } }
