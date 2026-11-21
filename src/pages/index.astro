@@ -1,0 +1,399 @@
+---
+import { SCRIPT_URL, EVENT } from '../config';
+const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{EVENT.title} RSVP</title>
+    <meta name="description" content={`RSVP for the ${EVENT.title} and see who's bringing what.`} />
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Inter:wght@400;500;600&display=swap" />
+  </head>
+  <body>
+    <main class="wrap" id="app" data-script-url={SCRIPT_URL}>
+      <header>
+        <div class="garland" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="eyebrow">Potluck sign-up</div>
+        <h1>{EVENT.title}</h1>
+        {details.length > 0 && <p class="details">{details.join(' · ')}</p>}
+        <p class="lede">{EVENT.note}</p>
+      </header>
+
+      <div class="notice" id="demo" hidden>
+        Preview mode: the list below is sample data and RSVPs aren't saved. Add the Apps Script URL to <code>src/config.ts</code> to go live.
+      </div>
+
+      <section class="card" aria-labelledby="rsvp-title">
+        <h2 id="rsvp-title">Your RSVP</h2>
+        <form id="rsvp-form" novalidate>
+          <div class="field">
+            <label for="name">Your name or family name</label>
+            <input type="text" id="name" maxlength="60" autocomplete="name" placeholder="e.g. The Johnson family" required />
+          </div>
+          <div class="row">
+            <div class="field">
+              <span class="label" id="count-label">Number attending</span>
+              <div class="stepper" role="group" aria-labelledby="count-label">
+                <button type="button" id="minus" aria-label="One fewer">−</button>
+                <output id="count" aria-live="polite">2</output>
+                <button type="button" id="plus" aria-label="One more">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="kind-label">I'm bringing a</span>
+              <div class="seg" role="radiogroup" aria-labelledby="kind-label">
+                <label><input type="radio" name="kind" id="kind-side" value="side" checked /><span>Side dish</span></label>
+                <label><input type="radio" name="kind" id="kind-dessert" value="dessert" /><span>Dessert</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="dish">What are you bringing?</label>
+            <input type="text" id="dish" maxlength="80" placeholder="e.g. Green bean casserole" required />
+            <div class="dupe" id="dupe" hidden></div>
+          </div>
+          <div class="trap" aria-hidden="true">
+            <label for="website">Leave this empty</label>
+            <input type="text" id="website" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="submit">Send RSVP</button>
+            <button type="button" class="btn btn-ghost" id="cancel" hidden>Cancel my RSVP</button>
+            <span class="status" id="status" role="status"></span>
+          </div>
+          <div class="actions" id="confirm-cancel" hidden>
+            <span>Remove your RSVP from the list?</span>
+            <button type="button" class="btn btn-danger" id="confirm-yes">Yes, remove it</button>
+            <button type="button" class="btn btn-ghost" id="confirm-no">Keep it</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="list-title">
+        <h2 id="list-title">Who's bringing what</h2>
+        <div class="tally">
+          <span><b id="t-people">0</b>attending</span>
+          <span><b id="t-sides">0</b>sides</span>
+          <span><b id="t-desserts">0</b>desserts</span>
+        </div>
+        <p class="hint" id="list-status">Loading the list…</p>
+        <div class="cols">
+          <div class="col sides">
+            <h3>Side dishes</h3>
+            <ul class="dishes" id="list-side"></ul>
+          </div>
+          <div class="col desserts">
+            <h3>Desserts</h3>
+            <ul class="dishes" id="list-dessert"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      type Row = { id: string; name: string; count: number; kind: 'side' | 'dessert'; dish: string };
+
+      const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+      const app = $('app');
+      const SCRIPT_URL = app.dataset.scriptUrl || '';
+      const DEMO = !SCRIPT_URL;
+      const STORE_KEY = 'deacon-christmas-rsvp';
+
+      const form = $<HTMLFormElement>('rsvp-form');
+      const nameEl = $<HTMLInputElement>('name');
+      const dishEl = $<HTMLInputElement>('dish');
+      const countEl = $('count');
+      const statusEl = $('status');
+      const submitBtn = $<HTMLButtonElement>('submit');
+      const cancelBtn = $<HTMLButtonElement>('cancel');
+      const confirmBox = $('confirm-cancel');
+      const listStatus = $('list-status');
+
+      let rows: Row[] = [];
+      let count = 2;
+      let mine: { id: string; token: string } | null = null;
+      try { mine = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch { mine = null; }
+
+      const saveMine = (v: typeof mine) => {
+        mine = v;
+        try { v ? localStorage.setItem(STORE_KEY, JSON.stringify(v)) : localStorage.removeItem(STORE_KEY); } catch {}
+      };
+
+      function setCount(n: number) { count = Math.max(1, Math.min(30, n)); countEl.textContent = String(count); }
+      $('minus').onclick = () => setCount(count - 1);
+      $('plus').onclick = () => setCount(count + 1);
+      const kind = () => ((document.querySelector('input[name="kind"]:checked') as HTMLInputElement)?.value === 'dessert' ? 'dessert' : 'side');
+
+      function say(msg: string, err = false) { statusEl.textContent = msg; statusEl.classList.toggle('err', err); }
+
+      const norm = (s: string) => s.toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .replace(/\b(the|a|an|my|homemade|famous|grandma'?s?)\b/g, ' ')
+        .replace(/s\b/g, '')
+        .replace(/\s+/g, ' ').trim();
+
+      function checkDupe() {
+        const box = $('dupe');
+        const d = norm(dishEl.value);
+        if (d.length < 3) { box.hidden = true; return; }
+        const hits = rows.filter((r) => {
+          if (mine && r.id === mine.id) return false;
+          const n = norm(r.dish);
+          return n.length >= 3 && (n.includes(d) || d.includes(n));
+        });
+        if (!hits.length) { box.hidden = true; return; }
+        box.textContent = 'Already on the list: ' + hits.map((h) => `${h.dish} (${h.name || 'someone'})`).join(', ') + '. Maybe pick something different?';
+        box.hidden = false;
+      }
+      dishEl.addEventListener('input', checkDupe);
+
+      function render() {
+        const byDish = (a: Row, b: Row) => a.dish.localeCompare(b.dish);
+        const sides = rows.filter((r) => r.kind !== 'dessert').sort(byDish);
+        const desserts = rows.filter((r) => r.kind === 'dessert').sort(byDish);
+        for (const [listId, items, word] of [['list-side', sides, 'side dishes'], ['list-dessert', desserts, 'desserts']] as const) {
+          const list = $(listId);
+          list.replaceChildren();
+          if (!items.length) {
+            const li = document.createElement('li');
+            li.className = 'empty';
+            li.textContent = `No ${word} yet.`;
+            list.append(li);
+            continue;
+          }
+          for (const r of items) {
+            const li = document.createElement('li');
+            const dish = document.createElement('span');
+            dish.className = 'dish';
+            dish.textContent = r.dish;
+            if (mine && r.id === mine.id) {
+              const tag = document.createElement('span');
+              tag.className = 'mine';
+              tag.textContent = 'You';
+              dish.append(' ', tag);
+            }
+            const who = document.createElement('span');
+            who.className = 'who';
+            who.textContent = `${r.name || 'Someone'} · party of ${r.count}`;
+            li.append(dish, who);
+            list.append(li);
+          }
+        }
+        $('t-people').textContent = String(rows.reduce((s, r) => s + (r.count || 0), 0));
+        $('t-sides').textContent = String(sides.length);
+        $('t-desserts').textContent = String(desserts.length);
+        checkDupe();
+      }
+
+      function fillFromMine() {
+        const r = mine && rows.find((x) => x.id === mine!.id);
+        if (!r) {
+          submitBtn.textContent = 'Send RSVP';
+          cancelBtn.hidden = true;
+          return;
+        }
+        if (!nameEl.value) nameEl.value = r.name;
+        if (!dishEl.value) dishEl.value = r.dish;
+        setCount(r.count);
+        ($(r.kind === 'dessert' ? 'kind-dessert' : 'kind-side') as HTMLInputElement).checked = true;
+        submitBtn.textContent = 'Update my RSVP';
+        cancelBtn.hidden = false;
+      }
+
+      async function load(first = false) {
+        if (DEMO) {
+          rows = [
+            { id: 'ex1', name: 'Example: The Smith family', count: 4, kind: 'side', dish: 'Green bean casserole' },
+            { id: 'ex2', name: 'Example: The Lee family', count: 3, kind: 'side', dish: 'Sweet potato casserole' },
+            { id: 'ex3', name: 'Example: The Garcia family', count: 5, kind: 'dessert', dish: 'Pecan pie' },
+          ];
+          $('demo').hidden = false;
+          listStatus.hidden = true;
+          render();
+          return;
+        }
+        try {
+          const res = await fetch(SCRIPT_URL, { cache: 'no-store' });
+          const data = await res.json();
+          if (!data.ok) throw new Error();
+          rows = data.rows;
+          listStatus.hidden = true;
+          render();
+          if (first) fillFromMine();
+        } catch {
+          if (first) {
+            listStatus.hidden = false;
+            listStatus.textContent = "The list couldn't load. Check your connection and refresh the page.";
+          }
+        }
+      }
+
+      async function post(body: Record<string, unknown>) {
+        // text/plain keeps this a "simple" request, which Apps Script accepts from another site.
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body),
+        });
+        return res.json();
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = nameEl.value.trim();
+        const dish = dishEl.value.trim();
+        if (!name) { say('Add your name so others know who\'s coming.', true); nameEl.focus(); return; }
+        if (!dish) { say('Add the dish you\'re bringing.', true); dishEl.focus(); return; }
+        if (DEMO) { say('Preview mode: RSVPs aren\'t saved yet.', true); return; }
+
+        submitBtn.disabled = true;
+        say('Saving…');
+        const payload = { name, dish, count, kind: kind(), website: $<HTMLInputElement>('website').value };
+        try {
+          let data = mine ? await post({ action: 'update', ...mine, ...payload }) : null;
+          if (!data || data.error === 'not_found') data = await post({ action: 'add', ...payload });
+          if (!data.ok) { say(data.error || 'Couldn\'t save your RSVP. Try again.', true); return; }
+          if (data.id) saveMine({ id: data.id, token: data.token });
+          say('Thanks! You\'re on the list.');
+          submitBtn.textContent = 'Update my RSVP';
+          cancelBtn.hidden = false;
+          await load();
+        } catch {
+          say('Couldn\'t save your RSVP. Check your connection and try again.', true);
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+
+      cancelBtn.onclick = () => { confirmBox.hidden = false; cancelBtn.hidden = true; };
+      $('confirm-no').onclick = () => { confirmBox.hidden = true; cancelBtn.hidden = false; };
+      $('confirm-yes').onclick = async () => {
+        if (!mine) return;
+        try {
+          const data = await post({ action: 'delete', ...mine });
+          if (!data.ok && data.error !== 'not_found') throw new Error();
+          saveMine(null);
+          confirmBox.hidden = true;
+          form.reset();
+          setCount(2);
+          submitBtn.textContent = 'Send RSVP';
+          say('Your RSVP was removed.');
+          await load();
+        } catch {
+          say('Couldn\'t remove your RSVP. Try again.', true);
+        }
+      };
+
+      load(true);
+      // Pick up other people's sign-ups while the page is open.
+      if (!DEMO) setInterval(() => { if (document.visibilityState === 'visible') load(); }, 30000);
+    </script>
+
+    <style is:global>
+      /* Layout: one narrow column — invitation header, RSVP card, then the potluck list split into Sides and Desserts */
+      :root {
+        --bg: #f3f6f4;
+        --surface: #ffffff;
+        --fg: #1d2a24;
+        --muted: #5b6b63;
+        --line: #d8e1dc;
+        --pine: #1f5c45;
+        --pine-soft: #e3efe9;
+        --berry: #a3263a;
+        --gold: #a87b1c;
+        --warn-bg: #fff4dc;
+        --warn-fg: #6e4d05;
+        --on-accent: #ffffff;
+        --font-display: 'Young Serif', Georgia, 'Times New Roman', serif;
+        --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1714; --surface: #17221d; --fg: #e6efe9; --muted: #9db0a6; --line: #2a3a33;
+          --pine: #6cc39d; --pine-soft: #1c3329; --berry: #f07a8b; --gold: #e0b45a;
+          --warn-bg: #3a2f14; --warn-fg: #f3d99a; --on-accent: #0f1714;
+          color-scheme: dark;
+        }
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        background: var(--bg); color: var(--fg);
+        font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 32px 64px;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 28px; }
+      header { display: grid; gap: 10px; }
+      .garland { display: flex; gap: 6px; }
+      .garland span { width: 10px; height: 10px; border-radius: 50%; }
+      .garland span:nth-child(3n+1) { background: var(--berry); }
+      .garland span:nth-child(3n+2) { background: var(--pine); }
+      .garland span:nth-child(3n) { background: var(--gold); }
+      .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--pine); font-weight: 600; }
+      h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 7vw, 48px); line-height: 1.08; margin: 0; text-wrap: balance; }
+      .details { margin: 0; font-weight: 600; color: var(--berry); }
+      .lede { color: var(--muted); margin: 0; max-width: 60ch; }
+      .notice { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 14px 16px; font-size: 15px; }
+      .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+      h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0; }
+      form { display: grid; gap: 16px; }
+      .field { display: grid; gap: 6px; min-width: 0; }
+      label, .label { font-weight: 600; font-size: 14px; }
+      .hint { font-size: 14px; color: var(--muted); margin: 0; }
+      input[type='text'] {
+        font: inherit; color: var(--fg); background: var(--bg);
+        border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%;
+      }
+      input[type='text']:focus-visible, button:focus-visible, .seg input:focus-visible + span { outline: 2px solid var(--pine); outline-offset: 2px; }
+      .row { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+      @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+      .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); width: max-content; }
+      .stepper button { font: inherit; font-size: 20px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--pine); cursor: pointer; }
+      .stepper button:hover { background: var(--pine-soft); }
+      .stepper output { min-width: 44px; text-align: center; font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+      .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: max-content; }
+      .seg label { cursor: pointer; font-weight: 500; }
+      .seg input { position: absolute; opacity: 0; pointer-events: none; }
+      .seg span { display: block; padding: 10px 16px; }
+      .seg label + label span { border-left: 1px solid var(--line); }
+      .seg input:checked + span { background: var(--pine); color: var(--on-accent); }
+      .dupe { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+      .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .btn { font: inherit; font-weight: 600; border-radius: 8px; padding: 11px 18px; cursor: pointer; border: 1px solid transparent; }
+      .btn-primary { background: var(--berry); color: var(--on-accent); }
+      .btn-primary:hover { filter: brightness(1.08); }
+      .btn-primary:disabled { opacity: .55; cursor: default; }
+      .btn-ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+      .btn-ghost:hover { color: var(--fg); }
+      .btn-danger { background: transparent; color: var(--berry); border-color: var(--berry); }
+      .status { font-size: 14px; color: var(--pine); font-weight: 500; }
+      .status.err { color: var(--berry); }
+      .tally { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 15px; color: var(--muted); }
+      .tally b { color: var(--fg); font-size: 22px; font-family: var(--font-display); font-weight: 400; margin-right: 4px; font-variant-numeric: tabular-nums; }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      @media (max-width: 560px) { .cols { grid-template-columns: 1fr; } }
+      .col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+      .col h3 { margin: 0; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+      .col.sides h3 { color: var(--pine); }
+      .col.desserts h3 { color: var(--berry); }
+      ul.dishes { list-style: none; margin: 0; padding: 0; display: grid; }
+      ul.dishes li { padding: 10px 0; border-top: 1px solid var(--line); display: grid; gap: 2px; }
+      .dish { font-weight: 600; overflow-wrap: anywhere; }
+      .who { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+      .mine { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+      .empty { color: var(--muted); font-size: 14px; }
+      code { font-size: .9em; }
+      @media (prefers-reduced-motion: no-preference) { .btn, .stepper button { transition: filter .15s, background .15s; } }
+    </style>
+  </body>
+</html>
