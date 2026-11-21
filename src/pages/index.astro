@@ -21,8 +21,20 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
         <div class="eyebrow">Potluck sign-up</div>
         <h1>{EVENT.title}</h1>
         {details.length > 0 && <p class="details">{details.join(' · ')}</p>}
-        <p class="lede">{EVENT.note}</p>
+        <p class="lede">{EVENT.intro}</p>
       </header>
+
+      <section class="card info" aria-label="Party details">
+        <dl class="info-list">
+          {EVENT.details.map((d) => (
+            <div class="info-item">
+              <dt>{d.label}</dt>
+              <dd>{d.text}</dd>
+            </div>
+          ))}
+        </dl>
+        <p class="signup-note">{EVENT.signupNote}</p>
+      </section>
 
       <div class="notice" id="demo" hidden>
         Preview mode: the list below is sample data and RSVPs aren't saved. Add the Apps Script URL to <code>src/config.ts</code> to go live.
@@ -93,6 +105,8 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
           </div>
         </div>
       </section>
+
+      <p class="closing">{EVENT.closing}</p>
     </main>
 
     <script>
@@ -341,7 +355,15 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
       .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--pine); font-weight: 600; }
       h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 7vw, 48px); line-height: 1.08; margin: 0; text-wrap: balance; }
       .details { margin: 0; font-weight: 600; color: var(--berry); }
-      .lede { color: var(--muted); margin: 0; max-width: 60ch; }
+      .lede { color: var(--muted); margin: 0; max-width: 60ch; font-size: 17px; }
+      .info-list { margin: 0; display: grid; gap: 14px; }
+      .info-item { display: grid; grid-template-columns: 11rem 1fr; gap: 4px 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+      .info-item:first-child { border-top: 0; padding-top: 0; }
+      .info-item dt { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--pine); padding-top: 3px; }
+      .info-item dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+      @media (max-width: 560px) { .info-item { grid-template-columns: 1fr; } }
+      .signup-note { margin: 0; font-weight: 600; }
+      .closing { margin: 0; text-align: center; font-family: var(--font-display); font-size: 19px; color: var(--muted); text-wrap: balance; }
       .notice { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 14px 16px; font-size: 15px; }
       .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
       h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0; }

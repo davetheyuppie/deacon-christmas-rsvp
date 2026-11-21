@@ -4,10 +4,34 @@
 export const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9fylkbfAg4geGe-4SrFkYORYHGap-Wmm0Y0sFEs3TQVsM7KTL7vw8GjdvdPm2VAf_Rg/exec';
 
 export const EVENT = {
-  title: "Deacons' Christmas Party",
-  /** Leave any of these empty to hide them. */
-  date: '',
-  time: '',
-  place: '',
-  note: "Let us know how many are coming and what you're bringing. Check the list first so we get a good spread of sides and desserts.",
+  title: 'Deacon Christmas Party',
+  /** Shown in the highlighted line under the title. Leave any empty to hide it. */
+  date: 'Sunday, December 13',
+  time: '5:00 PM',
+  place: 'The Lemon Orchard Venue on the Lake',
+
+  intro:
+    "It's time for our annual Deacon Christmas Party! Join us on Sunday, December 13, at 5:00 PM for an evening of good food, fun games, and Christmas fellowship. We might even do some caroling… just kidding, no caroling!",
+
+  details: [
+    {
+      label: 'Location',
+      text: 'The Lemon Orchard Venue on the Lake, 11291 Knights Griffin Rd, Thonotosassa, FL 33592',
+    },
+    {
+      label: 'Food',
+      text: 'The church will provide the meat and drinks. We are asking you to bring a side dish or dessert to share (enough to serve approximately 10 people).',
+    },
+    {
+      label: 'Gift exchange',
+      text: "Bring a wrapped gift valued at $15 or less if you'd like to participate.",
+    },
+    {
+      label: 'Ministry Center donations',
+      text: "We'll also be collecting new blankets, towels, and socks for the Mission Hill Ministry Center. Please consider bringing an item to support this ministry.",
+    },
+  ],
+
+  signupNote: "Please use the sign-up below to let us know you're coming and what dish you plan to bring.",
+  closing: 'We look forward to celebrating Christmas together and enjoying a great evening of fellowship!',
 };
