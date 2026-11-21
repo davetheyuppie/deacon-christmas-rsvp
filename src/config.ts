@@ -31,7 +31,7 @@ export const EVENT = {
     {
       label: 'Food',
       text: `<b>We are asking you to bring a side dish or dessert to share (enough to serve approximately 10 people).</b> 
-      The church will provide the meat and drinks. `,
+      <span style="font-weight:200">The church will provide the meat and drinks.</span> `,
     },
     {
       label: 'Gift exchange',
