@@ -10,8 +10,13 @@ export const EVENT = {
   time: '5:00 PM',
   place: 'The Lemon Orchard Venue on the Lake',
 
-  intro:
-    "It's time for our annual Deacon Christmas Party!<br>Join us on Sunday, December 13, at 5:00 PM for an evening of good food, fun games, and Christmas fellowship. We might even do some caroling… just kidding, no caroling!",
+  // Write the intro between the backticks. Press Enter for a new line;
+  // leave an empty line between paragraphs.
+  intro: `
+    It's time for our annual Deacon Christmas Party!
+
+    Join us on Sunday, December 13, at 5:00 PM for an evening of good food, fun games, and Christmas fellowship. We might even do some caroling… just kidding, no caroling!
+  `,
 
   details: [
     {

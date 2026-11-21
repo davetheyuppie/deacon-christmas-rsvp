@@ -1,6 +1,11 @@
 ---
 import { SCRIPT_URL, EVENT } from '../config';
 const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
+// A blank line in the intro starts a new paragraph; a single line break stays a line break.
+const introParagraphs = EVENT.intro
+  .trim()
+  .split(/\n\s*\n/)
+  .map((p) => p.split('\n').map((line) => line.trim()).filter(Boolean));
 ---
 <!doctype html>
 <html lang="en">
@@ -21,7 +26,9 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
         <div class="eyebrow">Dinner sign-up</div>
         <h1>{EVENT.title}</h1>
         {details.length > 0 && <p class="details">{details.join(' · ')}</p>}
-        <p class="lede">{EVENT.intro}</p>
+        {introParagraphs.map((lines) => (
+          <p class="lede">{lines.map((line, i) => (<>{i > 0 && <br />}{line}</>))}</p>
+        ))}
       </header>
 
       <section class="card info" aria-label="Party details">
