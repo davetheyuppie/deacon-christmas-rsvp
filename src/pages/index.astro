@@ -18,7 +18,7 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
     <main class="wrap" id="app" data-script-url={SCRIPT_URL}>
       <header>
         <div class="garland" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="eyebrow">Potluck sign-up</div>
+        <div class="eyebrow">Dinner sign-up</div>
         <h1>{EVENT.title}</h1>
         {details.length > 0 && <p class="details">{details.join(' · ')}</p>}
         <p class="lede">{EVENT.intro}</p>
@@ -44,7 +44,7 @@ const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
         <h2 id="rsvp-title">Your RSVP</h2>
         <form id="rsvp-form" novalidate>
           <div class="field">
-            <label for="name">Your name or family name</label>
+            <label for="name">Your name</label>
             <input type="text" id="name" maxlength="60" autocomplete="name" placeholder="e.g. The Johnson family" required />
           </div>
           <div class="row">
