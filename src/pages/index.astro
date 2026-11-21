@@ -1,13 +1,13 @@
 ---
 import { SCRIPT_URL, EVENT } from '../config';
+import '../styles/custom.css';
 const details = [EVENT.date, EVENT.time, EVENT.place].filter(Boolean);
-// A blank line in the intro starts a new paragraph; a single line break stays a line break.
-const introParagraphs = EVENT.intro
-  .trim()
-  .split(/\n\s*\n/)
-  .map((p) => p.split('\n').map((line) => line.trim()).filter(Boolean));
-// Detail text: each line break in the config becomes a line break on the page.
-const toLines = (text: string) => text.split('\n').map((line) => line.trim()).filter(Boolean);
+
+// Text in config.ts may contain HTML tags (<strong>, <em>, <span class="...">).
+// Each line break becomes <br>; in the intro, a blank line starts a new paragraph.
+const linesToHtml = (text: string) =>
+  text.split('\n').map((line) => line.trim()).filter(Boolean).join('<br>');
+const introParagraphs = EVENT.intro.trim().split(/\n\s*\n/).map(linesToHtml);
 ---
 <!doctype html>
 <html lang="en">
@@ -28,8 +28,8 @@ const toLines = (text: string) => text.split('\n').map((line) => line.trim()).fi
         <div class="eyebrow">Dinner sign-up</div>
         <h1>{EVENT.title}</h1>
         {details.length > 0 && <p class="details">{details.join(' · ')}</p>}
-        {introParagraphs.map((lines) => (
-          <p class="lede">{lines.map((line, i) => (<>{i > 0 && <br />}{line}</>))}</p>
+        {introParagraphs.map((html) => (
+          <p class="lede" set:html={html} />
         ))}
       </header>
 
@@ -39,7 +39,7 @@ const toLines = (text: string) => text.split('\n').map((line) => line.trim()).fi
             <div class="info-item">
               <dt>{d.label}</dt>
               <dd>
-                {toLines(d.text).map((line, i) => (<>{i > 0 && <br />}{line}</>))}
+                <Fragment set:html={linesToHtml(d.text)} />
                 {'link' in d && d.link && (
                   <a class="info-link" href={d.link.url} target="_blank" rel="noopener">{d.link.text} ↗</a>
                 )}
@@ -47,7 +47,7 @@ const toLines = (text: string) => text.split('\n').map((line) => line.trim()).fi
             </div>
           ))}
         </dl>
-        <p class="signup-note">{EVENT.signupNote}</p>
+        <p class="signup-note" set:html={linesToHtml(EVENT.signupNote)} />
       </section>
 
       <div class="notice" id="demo" hidden>
@@ -120,7 +120,7 @@ const toLines = (text: string) => text.split('\n').map((line) => line.trim()).fi
         </div>
       </section>
 
-      <p class="closing">{EVENT.closing}</p>
+      <p class="closing" set:html={linesToHtml(EVENT.closing)} />
     </main>
 
     <script>
