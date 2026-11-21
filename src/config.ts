@@ -21,7 +21,7 @@ export const EVENT = {
   details: [
     {
       label: 'Location',
-      text: 'The Lemon Orchard Venue on the Lake, 11291 Knights Griffin Rd, Thonotosassa, FL 33592',
+      text: 'The Lemon Orchard Venue on the Lake, 11291 Knights Griffin Rd, Thonotosassa, FL 33592 ',
       // Any detail can have a link like this one: the words to show, and where it goes.
       link: {
         text: 'Get directions',
