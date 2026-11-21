@@ -30,7 +30,8 @@ export const EVENT = {
     },
     {
       label: 'Food',
-      text: 'The church will provide the meat and drinks. We are asking you to bring a side dish or dessert to share (enough to serve approximately 10 people).',
+      text: `We are asking you to bring a side dish or dessert to share (enough to serve approximately 10 people). 
+      The church will provide the meat and drinks. `,
     },
     {
       label: 'Gift exchange',
