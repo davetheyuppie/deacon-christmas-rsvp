@@ -22,6 +22,11 @@ export const EVENT = {
     {
       label: 'Location',
       text: 'The Lemon Orchard Venue on the Lake, 11291 Knights Griffin Rd, Thonotosassa, FL 33592',
+      // Any detail can have a link like this one: the words to show, and where it goes.
+      link: {
+        text: 'Get directions',
+        url: 'https://www.google.com/maps/dir/?api=1&destination=11291+Knights+Griffin+Rd,+Thonotosassa,+FL+33592',
+      },
     },
     {
       label: 'Food',
